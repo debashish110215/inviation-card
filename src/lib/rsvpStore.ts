@@ -10,8 +10,8 @@ export type Rsvp = {
 };
 
 // Vercel's Upstash Redis integration sets KV_* (older) or UPSTASH_* (newer) variables.
-const REDIS_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-const REDIS_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+const REDIS_URL = process.env.INVITATION_CARD_DB_KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_URL;
+const REDIS_TOKEN = process.env.INVITATION_CARD_DB_KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_TOKEN;
 const KEY = "wedding:rsvps";
 const FILE = path.join(process.cwd(), ".data", "rsvps.json");
 
