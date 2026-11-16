@@ -1,0 +1,41 @@
+.admin-shell{min-height:100vh;padding:48px 16px;background:radial-gradient(ellipse at 50% 0,#5a1a2a,#260710 75%);display:flex;justify-content:center;align-items:flex-start}
+.admin-card{width:100%;max-width:960px;background:var(--cream);color:var(--ink);border:1px solid var(--gold);padding:clamp(22px,4vw,40px);box-shadow:0 25px 60px #0007}
+.admin-card.narrow{max-width:420px;margin-top:10vh}
+.admin-card h1{font:500 clamp(30px,5vw,42px)/1 'Cormorant Garamond',serif;color:#5a1a2b;margin:0 0 20px}
+.admin-card code{background:#e9dcc4;padding:1px 5px;font-size:.9em}
+.admin-kicker{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#9b7540;margin:0 0 8px}
+.admin-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:8px}
+.admin-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+.admin-btn{display:inline-flex;align-items:center;justify-content:center;padding:10px 16px;border:1px solid #b68e4d;background:transparent;color:#5a1a2b;font-size:11px;letter-spacing:1px;text-transform:uppercase;cursor:pointer}
+.admin-btn:hover{background:#efe2c9}
+.admin-btn.primary{background:var(--wine2);color:var(--gold2);border-color:var(--wine2);width:100%;padding:13px}
+.admin-btn.primary:hover{background:var(--wine)}
+.admin-btn:disabled{opacity:.6;cursor:wait}
+.admin-login{display:flex;flex-direction:column;gap:10px}
+.admin-login label{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#9b7540}
+.admin-login input{padding:12px 14px;border:1px solid #c9a65b;background:#fffaf2;color:var(--ink);outline:none}
+.admin-login input:focus{border-color:#8a6224}
+.admin-note{font-size:12px;color:#7a6852;background:#efe2c9;padding:10px 12px;margin:0 0 18px}
+.admin-error{font-size:13px;color:#a12a2a;margin:0}
+.admin-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:10px 0 28px}
+.admin-stats div{border:1px solid #d9c49e;padding:16px 12px;text-align:center;background:#fffaf2}
+.admin-stats strong{display:block;font:500 36px/1 'Cormorant Garamond',serif;color:#672032}
+.admin-stats span{font-size:9px;letter-spacing:1.8px;text-transform:uppercase;color:#99866d}
+.admin-empty{text-align:center;color:#88777a;font:italic 20px 'Cormorant Garamond',serif;padding:30px 0}
+.admin-table-wrap{overflow-x:auto}
+.admin-table{width:100%;border-collapse:collapse;font-size:14px}
+.admin-table th{text-align:left;font-size:9px;letter-spacing:1.8px;text-transform:uppercase;color:#9b7540;font-weight:600;padding:10px 12px;border-bottom:1px solid #c9a65b}
+.admin-table td{padding:12px;border-bottom:1px solid #e6d8bf;vertical-align:middle}
+.admin-table tr:hover td{background:#f3e9d7}
+.pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.pill.yes{background:#dcebd5;color:#2f5a25}.pill.no{background:#f1d9d6;color:#8a2c25}
+.admin-delete{background:none;border:0;color:#a0574f;font-size:12px;cursor:pointer;text-decoration:underline}
+.admin-delete:disabled{opacity:.5}
+@media(max-width:640px){
+  .admin-stats{grid-template-columns:repeat(2,1fr)}
+  .admin-table thead{display:none}
+  .admin-table,.admin-table tbody,.admin-table tr,.admin-table td{display:block;width:100%}
+  .admin-table tr{border:1px solid #e1d1b4;margin-bottom:10px;padding:6px 0;background:#fffaf2}
+  .admin-table td{border:0;padding:6px 14px;display:flex;justify-content:space-between;gap:12px}
+  .admin-table td[data-label]:before{content:attr(data-label);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#9b7540}
+}

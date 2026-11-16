@@ -44,6 +44,11 @@ function useCountdown(target: Date) {
   }, [now, target]);
 }
 
+function formatTime(seconds: number) {
+  if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
+  return `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
+}
+
 function Reveal({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -65,20 +70,44 @@ export default function Home() {
   const [envelopeDone, setEnvelopeDone] = useState(false);
   const [musicOn, setMusicOn] = useState(false);
   const [musicReady, setMusicReady] = useState(false);
+  const [songTime, setSongTime] = useState(0);
+  const [songDuration, setSongDuration] = useState(0);
   const [selectedPhoto, setSelectedPhoto] = useState<number | null>(null);
   const [rsvp, setRsvp] = useState<"yes" | "no" | "">("");
   const [guestName, setGuestName] = useState("");
   const [rsvpSent, setRsvpSent] = useState(false);
+  const [guestCount, setGuestCount] = useState(1);
+  const [rsvpBusy, setRsvpBusy] = useState(false);
+  const [rsvpError, setRsvpError] = useState("");
+  const [honeypot, setHoneypot] = useState("");
   const audioRef = useRef<HTMLAudioElement>(null);
   const countdown = useCountdown(WEDDING_DATE);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    const onCanPlay = () => setMusicReady(true);
-    audio.addEventListener("canplay", onCanPlay);
-    return () => audio.removeEventListener("canplay", onCanPlay);
+    const onReady = () => { setMusicReady(true); setSongDuration(audio.duration || 0); };
+    const onTime = () => setSongTime(audio.currentTime);
+    const onPause = () => setMusicOn(false);
+    const onPlay = () => setMusicOn(true);
+    audio.addEventListener("loadedmetadata", onReady);
+    audio.addEventListener("timeupdate", onTime);
+    audio.addEventListener("pause", onPause);
+    audio.addEventListener("play", onPlay);
+    if (audio.readyState >= 1) onReady();
+    return () => {
+      audio.removeEventListener("loadedmetadata", onReady);
+      audio.removeEventListener("timeupdate", onTime);
+      audio.removeEventListener("pause", onPause);
+      audio.removeEventListener("play", onPlay);
+    };
   }, []);
+
+  const seekSong = (value: number) => {
+    const audio = audioRef.current;
+    if (audio) audio.currentTime = value;
+    setSongTime(value);
+  };
 
   const toggleMusic = async () => {
     const audio = audioRef.current;
@@ -93,7 +122,6 @@ export default function Home() {
       setMusicOn(true);
     } catch {
       setMusicOn(false);
-      alert("Add your licensed music file at public/music/wedding.mp3, then try again.");
     }
   };
 
@@ -104,17 +132,31 @@ export default function Home() {
     audio.play().then(() => setMusicOn(true)).catch(() => setMusicOn(false));
   };
 
-  const submitRsvp =(e: React.FormEvent) => {
+  const submitRsvp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!guestName.trim() || !rsvp) return;
-    setRsvpSent(true);
+    if (!guestName.trim() || !rsvp || rsvpBusy) return;
+    setRsvpBusy(true);
+    setRsvpError("");
+    try {
+      const res = await fetch("/api/rsvp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: guestName, attending: rsvp, guests: guestCount, website: honeypot }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? "Something went wrong.");
+      setRsvpSent(true);
+    } catch (err) {
+      setRsvpError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setRsvpBusy(false);
+    }
   };
 
   const closeLightbox = () => setSelectedPhoto(null);
 
   return (
     <main>
-      <audio ref={audioRef} src="/music/wedding.mp3" loop preload="none" />
+      <audio ref={audioRef} src="/music/wedding.mp3" loop preload="metadata" />
       {!envelopeDone && <Envelope onOpen={startMusicQuietly} onDone={() => setEnvelopeDone(true)} />}
 
       <nav className="top-nav">
@@ -247,12 +289,24 @@ export default function Home() {
 
       <section className="music-section section-light">
         <Reveal>
-          <div className="music-disc"><span>♪</span></div>
           <p className="eyebrow dark">A soundtrack for our day</p>
           <h2>Our <em>Wedding Song</em></h2>
-          <p className="music-copy">A little music makes every memory sweeter.</p>
-          <button className="play-button" onClick={toggleMusic}>{musicOn ? <Pause size={18}/> : <Play size={18} fill="currentColor"/>}{musicOn ? "Pause music" : "Play our song"}</button>
-          <p className="music-status">{musicReady ? "Music is ready" : "Add your own song to make this moment yours"}</p>
+          <p className="music-copy">The melody we&apos;ll walk down the aisle to.</p>
+          <div className={`song-card ${musicOn ? "is-playing" : ""}`}>
+            <div className="song-vinyl" aria-hidden="true"><span>A<i>&</i>A</span></div>
+            <div className="song-body">
+              <p className="song-label">Now playing</p>
+              <h3 className="song-title">Canon in D</h3>
+              <p className="song-artist">Johann Pachelbel</p>
+              <div className="song-bars" aria-hidden="true"><i/><i/><i/><i/><i/></div>
+              <input className="song-progress" type="range" min={0} max={songDuration || 0} step={0.1} value={songTime}
+                onChange={e => seekSong(Number(e.target.value))} disabled={!musicReady} aria-label="Song position"
+                style={{ "--pct": `${songDuration ? (songTime / songDuration) * 100 : 0}%` } as React.CSSProperties}/>
+              <div className="song-times"><span>{formatTime(songTime)}</span><span>{formatTime(songDuration)}</span></div>
+              <button className="play-button" onClick={toggleMusic}>{musicOn ? <Pause size={18}/> : <Play size={18} fill="currentColor"/>}{musicOn ? "Pause" : "Play our song"}</button>
+            </div>
+          </div>
+          <p className="music-status">Performed by the U.S. Air Force Band Strolling Strings · Public domain recording</p>
         </Reveal>
       </section>
 
@@ -260,7 +314,7 @@ export default function Home() {
         <Reveal>
           <p className="eyebrow">We saved you a place</p>
           <h2>Will you <em>join us?</em></h2>
-          {rsvpSent ? <div className="rsvp-success"><Heart size={28} fill="currentColor"/><h3>Thank you, {guestName}!</h3><p>Your response has been recorded in this preview.</p></div> :
+          {rsvpSent ? <div className="rsvp-success"><Heart size={28} fill="currentColor"/><h3>Thank you, {guestName}!</h3><p>{rsvp === "yes" ? "We can't wait to celebrate with you." : "We'll miss you — thank you for letting us know."}</p></div> :
             <form className="rsvp-form" onSubmit={submitRsvp}>
               <label htmlFor="guest-name">Your name</label>
               <input id="guest-name" value={guestName} onChange={e => setGuestName(e.target.value)} placeholder="Enter your name" required/>
@@ -269,8 +323,16 @@ export default function Home() {
                 <button type="button" className={rsvp === "yes" ? "chosen" : ""} onClick={() => setRsvp("yes")}>Joyfully accepts</button>
                 <button type="button" className={rsvp === "no" ? "chosen" : ""} onClick={() => setRsvp("no")}>Regretfully declines</button>
               </div>
-              <button className="gold-button submit-button" type="submit" disabled={!rsvp}>Send response <ArrowUpRight size={16}/></button>
-              <small>This demo stores your response only in the current browser session. Connect an API to collect real RSVPs.</small>
+              {rsvp === "yes" && <>
+                <label htmlFor="guest-count">Number of guests (including you)</label>
+                <select id="guest-count" value={guestCount} onChange={e => setGuestCount(Number(e.target.value))}>
+                  {Array.from({ length: 10 }, (_, i) => i + 1).map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </>}
+              <input className="rsvp-honeypot" tabIndex={-1} autoComplete="off" aria-hidden="true" value={honeypot} onChange={e => setHoneypot(e.target.value)} name="website" />
+              {rsvpError && <p className="rsvp-error" role="alert">{rsvpError}</p>}
+              <button className="gold-button submit-button" type="submit" disabled={!rsvp || rsvpBusy}>{rsvpBusy ? "Sending…" : "Send response"} <ArrowUpRight size={16}/></button>
+              <small>Kindly respond by 1 December 2026.</small>
             </form>}
         </Reveal>
       </section>
